@@ -924,12 +924,13 @@
         post.gain.value = .78;
 
         if (preset === "oni") {
-          connectLayer(context, buffer, mix, { rate: .72 - intensity * .08, gain: .9 });
-          connectLayer(context, buffer, mix, { rate: .58, gain: .16 + intensity * .24, start: .012 });
-          shaper.curve = createDistortionCurve(110 + intensity * 520);
+          connectLayer(context, buffer, mix, { rate: .98 - intensity * .04, gain: .82 });
+          connectLayer(context, buffer, mix, { rate: .72 - intensity * .07, gain: .12 + intensity * .22, start: .01 });
+          connectLayer(context, buffer, mix, { rate: 1, gain: .2 + intensity * .1 });
+          shaper.curve = createDistortionCurve(95 + intensity * 430);
           shaper.oversample = "4x";
           lowpass.type = "lowpass";
-          lowpass.frequency.value = 1300 - intensity * 420;
+          lowpass.frequency.value = 1700 - intensity * 460;
           highpass.type = "highpass";
           highpass.frequency.value = 45;
           mix.connect(shaper);
@@ -938,33 +939,33 @@
           highpass.connect(compressor);
           compressor.connect(post);
           post.connect(master);
-          addDelay(context, post, master, { time: .075, feedback: .08 + intensity * .12, wet: .06 + intensity * .08 });
+          addDelay(context, post, master, { time: .055, feedback: .04 + intensity * .08, wet: .03 + intensity * .05 });
         }
 
         if (preset === "ghost") {
-          connectLayer(context, buffer, mix, { rate: .9 - intensity * .08, gain: .66 });
-          connectLayer(context, buffer, mix, { rate: .98, gain: .2 + intensity * .12, start: .035 });
+          connectLayer(context, buffer, mix, { rate: .96 - intensity * .04, gain: .78 });
+          connectLayer(context, buffer, mix, { rate: 1, gain: .18 + intensity * .08, start: .025 });
           lowpass.type = "lowpass";
-          lowpass.frequency.value = 2400 - intensity * 700;
+          lowpass.frequency.value = 3100 - intensity * 700;
           highpass.type = "highpass";
-          highpass.frequency.value = 120 + intensity * 140;
+          highpass.frequency.value = 95 + intensity * 90;
           mix.connect(lowpass);
           lowpass.connect(highpass);
-          addTremolo(context, highpass, post, .18 + intensity * .42, 3.4 + intensity * 2.2);
-          post.gain.value = .58;
+          addTremolo(context, highpass, post, .12 + intensity * .26, 3.1 + intensity * 1.5);
+          post.gain.value = .72;
           post.connect(master);
-          addDelay(context, post, master, { time: .26 + intensity * .11, feedback: .22 + intensity * .24, wet: .18 + intensity * .26 });
-          addReverb(context, post, master, { seconds: 1.4 + intensity * 2.4, decay: 2.8, reverse: true, wet: .2 + intensity * .34 });
+          addDelay(context, post, master, { time: .18 + intensity * .07, feedback: .12 + intensity * .14, wet: .08 + intensity * .13 });
+          addReverb(context, post, master, { seconds: 1 + intensity * 1.2, decay: 3.1, reverse: true, wet: .09 + intensity * .18 });
         }
 
         if (preset === "demon") {
-          connectLayer(context, buffer, mix, { rate: .64 - intensity * .09, gain: .72 });
-          connectLayer(context, buffer, mix, { rate: .48 - intensity * .04, gain: .26 + intensity * .34, start: .018 });
-          connectLayer(context, buffer, mix, { rate: .82, gain: .18 + intensity * .2, start: .032 });
-          shaper.curve = createDistortionCurve(260 + intensity * 960);
+          connectLayer(context, buffer, mix, { rate: .88 - intensity * .05, gain: .68 });
+          connectLayer(context, buffer, mix, { rate: .64 - intensity * .06, gain: .2 + intensity * .28, start: .012 });
+          connectLayer(context, buffer, mix, { rate: 1, gain: .24 + intensity * .12, start: .018 });
+          shaper.curve = createDistortionCurve(210 + intensity * 760);
           shaper.oversample = "4x";
           lowpass.type = "lowpass";
-          lowpass.frequency.value = 1600 - intensity * 520;
+          lowpass.frequency.value = 2100 - intensity * 540;
           highpass.type = "highpass";
           highpass.frequency.value = 38;
           mix.connect(shaper);
@@ -972,10 +973,10 @@
           lowpass.connect(highpass);
           highpass.connect(compressor);
           compressor.connect(post);
-          post.gain.value = .72;
+          post.gain.value = .78;
           post.connect(master);
-          addDelay(context, post, master, { time: .11, feedback: .16 + intensity * .24, wet: .1 + intensity * .16 });
-          addReverb(context, post, master, { seconds: .9 + intensity * 1.2, decay: 2.1, reverse: false, wet: .08 + intensity * .16 });
+          addDelay(context, post, master, { time: .075, feedback: .08 + intensity * .12, wet: .05 + intensity * .08 });
+          addReverb(context, post, master, { seconds: .65 + intensity * .7, decay: 2.4, reverse: false, wet: .04 + intensity * .09 });
         }
 
         if (preset === "radio") {
@@ -1011,9 +1012,9 @@
 
       function getPresetMinPlaybackRate(preset, fear) {
         const intensity = fear / 100;
-        if (preset === "oni") return Math.min(.72 - intensity * .08, .58);
-        if (preset === "ghost") return .9 - intensity * .08;
-        if (preset === "demon") return Math.min(.64 - intensity * .09, .48 - intensity * .04);
+        if (preset === "oni") return Math.min(.98 - intensity * .04, .72 - intensity * .07);
+        if (preset === "ghost") return .96 - intensity * .04;
+        if (preset === "demon") return Math.min(.88 - intensity * .05, .64 - intensity * .06);
         if (preset === "radio") return .94 - intensity * .04;
         return 1;
       }
