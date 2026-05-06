@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080509">
+  <link rel="icon" href="data:,">
   <title>怖い声変換ツール</title>
   <style>
     :root {
@@ -515,6 +516,8 @@
     </footer>
   </main>
 
+  <script>window.TONE_SILENCE_LOGGING = true;</script>
+  <script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
   <script>
     (() => {
       "use strict";
@@ -900,7 +903,7 @@
         return source;
       }
 
-      function buildChain(context, buffer, preset, fear) {
+      function buildNativeChain(context, buffer, preset, fear) {
         const intensity = fear / 100;
         const master = context.createGain();
         master.gain.value = .82;
@@ -1019,6 +1022,140 @@
         return 1;
       }
 
+      function getTonePreset(preset, intensity) {
+        const presets = {
+          oni: {
+            layers: [
+              { rate: 1, gain: .74 },
+              { rate: .78 - intensity * .04, gain: .22 + intensity * .2, start: .012 },
+              { rate: .5, gain: .06 + intensity * .1, start: .024 }
+            ],
+            pitch: -3.5 - intensity * 5.5,
+            windowSize: .085,
+            eq: { low: 4 + intensity * 3, mid: -2, high: -7 - intensity * 3, lowFrequency: 280, highFrequency: 2300 },
+            distortion: .18 + intensity * .34,
+            delay: { delayTime: .055, feedback: .05 + intensity * .08, wet: .05 + intensity * .05 },
+            reverb: { roomSize: .22 + intensity * .18, dampening: 1800, wet: .05 + intensity * .06 },
+            compressor: { threshold: -25, ratio: 7 + intensity * 7, attack: .004, release: .18 },
+            master: .82
+          },
+          ghost: {
+            layers: [
+              { rate: 1, gain: .68 },
+              { rate: .98, gain: .18 + intensity * .08, start: .035 },
+              { rate: .92, gain: .08 + intensity * .1, start: .08 }
+            ],
+            pitch: -1.5 - intensity * 3,
+            windowSize: .1,
+            eq: { low: -3, mid: -1, high: -5 - intensity * 3, lowFrequency: 360, highFrequency: 3100 },
+            distortion: .03 + intensity * .08,
+            delay: { delayTime: .21 + intensity * .08, feedback: .16 + intensity * .16, wet: .16 + intensity * .14 },
+            reverb: { roomSize: .68 + intensity * .18, dampening: 2400, wet: .2 + intensity * .2 },
+            tremolo: { frequency: 3.2 + intensity * 1.8, depth: .16 + intensity * .26 },
+            compressor: { threshold: -28, ratio: 3 + intensity * 3, attack: .012, release: .3 },
+            master: .78
+          },
+          demon: {
+            layers: [
+              { rate: .96, gain: .58 },
+              { rate: .7 - intensity * .04, gain: .24 + intensity * .25, start: .012 },
+              { rate: .52 - intensity * .03, gain: .12 + intensity * .17, start: .026 }
+            ],
+            pitch: -5 - intensity * 6.5,
+            windowSize: .095,
+            eq: { low: 6 + intensity * 3, mid: -3, high: -8 - intensity * 3, lowFrequency: 240, highFrequency: 2100 },
+            distortion: .28 + intensity * .5,
+            delay: { delayTime: .075, feedback: .08 + intensity * .13, wet: .07 + intensity * .09 },
+            reverb: { roomSize: .32 + intensity * .22, dampening: 1400, wet: .08 + intensity * .12 },
+            compressor: { threshold: -27, ratio: 10 + intensity * 8, attack: .003, release: .16 },
+            master: .78
+          },
+          radio: {
+            layers: [
+              { rate: 1, gain: .76 },
+              { rate: .97 - intensity * .03, gain: .1 + intensity * .08, start: .018 }
+            ],
+            pitch: -1.8 - intensity * 2.2,
+            windowSize: .07,
+            eq: { low: -18, mid: 2 + intensity * 2, high: -12, lowFrequency: 620 + intensity * 180, highFrequency: 2300 - intensity * 550 },
+            distortion: .16 + intensity * .38,
+            delay: { delayTime: .045, feedback: .12 + intensity * .14, wet: .12 + intensity * .12 },
+            reverb: { roomSize: .16 + intensity * .1, dampening: 1800, wet: .03 + intensity * .05 },
+            noise: .018 + intensity * .06,
+            compressor: { threshold: -24, ratio: 5 + intensity * 5, attack: .004, release: .12 },
+            master: .72
+          }
+        };
+
+        return presets[preset] || presets.oni;
+      }
+
+      function connectToneLayer(buffer, destination, layer) {
+        const player = new Tone.Player({ fadeIn: .006, fadeOut: .08 });
+        const gain = new Tone.Gain(layer.gain);
+        player.buffer = buffer;
+        player.playbackRate = layer.rate || 1;
+        player.chain(gain, destination);
+        player.start(layer.start || 0);
+      }
+
+      function buildToneChain(buffer, preset, fear, duration) {
+        const intensity = fear / 100;
+        const settings = getTonePreset(preset, intensity);
+        const input = new Tone.Gain(1);
+        const pitch = new Tone.PitchShift({
+          pitch: settings.pitch,
+          windowSize: settings.windowSize,
+          wet: .82
+        });
+        const eq = new Tone.EQ3(settings.eq);
+        const distortion = new Tone.Distortion({
+          distortion: settings.distortion,
+          oversample: preset === "radio" ? "2x" : "4x",
+          wet: preset === "ghost" ? .35 : .58
+        });
+        const compressor = new Tone.Compressor(settings.compressor);
+        const master = new Tone.Gain(settings.master).toDestination();
+
+        settings.layers.forEach(layer => connectToneLayer(buffer, input, layer));
+
+        if (settings.tremolo) {
+          const tremolo = new Tone.Tremolo({
+            frequency: settings.tremolo.frequency,
+            depth: settings.tremolo.depth,
+            wet: .7
+          }).start(0);
+          input.chain(pitch, eq, tremolo, distortion, compressor, master);
+        } else {
+          input.chain(pitch, eq, distortion, compressor, master);
+        }
+
+        const delay = new Tone.FeedbackDelay(settings.delay).connect(master);
+        input.connect(delay);
+
+        const reverb = new Tone.Freeverb(settings.reverb).connect(master);
+        compressor.connect(reverb);
+
+        if (settings.noise) {
+          const noise = new Tone.Noise("brown");
+          const noiseFilter = new Tone.Filter(1600, "bandpass");
+          const noiseGain = new Tone.Gain(settings.noise);
+          noise.chain(noiseFilter, noiseGain, master);
+          noise.start(0).stop(duration);
+        }
+      }
+
+      async function renderToneEffect(buffer, preset, fear, duration, channels, sampleRate) {
+        if (!window.Tone || !Tone.Offline || !Tone.PitchShift) {
+          throw new Error("Tone.jsを読み込めませんでした。");
+        }
+
+        const toneBuffer = await Tone.Offline(() => {
+          buildToneChain(buffer, preset, fear, duration);
+        }, duration, channels, sampleRate);
+        return toneBuffer.get();
+      }
+
       async function renderEffect() {
         if (!state.sourceBuffer || state.isRendering) return;
 
@@ -1037,10 +1174,14 @@
           const duration = (Math.min(source.duration, MAX_SECONDS) / minRate) + extraSeconds;
           const length = Math.ceil(duration * sampleRate);
           const channels = Math.min(2, source.numberOfChannels || 1);
-          const context = new OfflineAudioContext(channels, length, sampleRate);
-
-          buildChain(context, source, preset, fear);
-          const rendered = await context.startRendering();
+          let rendered;
+          try {
+            rendered = await renderToneEffect(source, preset, fear, duration, channels, sampleRate);
+          } catch (toneError) {
+            const context = new OfflineAudioContext(channels, length, sampleRate);
+            buildNativeChain(context, source, preset, fear);
+            rendered = await context.startRendering();
+          }
           const wavBlob = audioBufferToWavBlob(rendered);
           const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
           const filename = `haunted-${preset}-${timestamp}.wav`;

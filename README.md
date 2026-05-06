@@ -17,7 +17,7 @@ iPhoneやPCで録音した声、または手元の音声・動画ファイルを
 - `index.html` 単体で動作
 - HTML / CSS / JavaScriptのみ
 - npm、Node.js、ビルド工程、バックエンド、DB、外部APIは不要
-- Web Audio API / MediaRecorder / OfflineAudioContextで端末内処理
+- Tone.js（MIT License）と Web Audio API / MediaRecorder / OfflineAudioContextで端末内処理
 - 音声はサーバーへ送信しない
 - AI声質変換、声真似、ボイスクローンではなく、音声エフェクトによる変換
 
@@ -54,7 +54,7 @@ iPhoneやPCで録音した声、または手元の音声・動画ファイルを
 
 ## プライバシー
 
-このツールは外部APIを使いません。
+このツールは外部APIを使いません。音声エフェクト処理には、ブラウザ上で動作するTone.js CDNを利用します。
 
 録音・読み込み・変換・WAV保存はブラウザ内で完結します。音声ファイルや録音データをサーバーへ送信する処理はありません。
 
@@ -66,11 +66,16 @@ iPhoneやPCで録音した声、または手元の音声・動画ファイルを
 
 ## 既知の制約
 
+- Tone.js CDNを読み込めない環境では、内蔵のWeb Audio API処理へフォールバックします
 - 長尺音声は端末負荷が高いため、処理対象は最大60秒程度です
 - 変換は端末内で行うため、古いスマートフォンでは時間がかかる場合があります
 - ブラウザがMediaRecorderやWeb Audio APIに対応していない場合、録音または変換ができません
 - 読み込めるファイル形式はブラウザのデコード対応状況に依存します
 - iPhoneではPCのようなドラッグ&ドロップではなく、ファイル選択または録音を使う想定です
+
+## 利用ライブラリ
+
+- [Tone.js](https://tonejs.github.io/) / [GitHub](https://github.com/Tonejs/Tone.js/) - MIT License
 
 ## 動作確認チェックリスト
 
@@ -84,5 +89,5 @@ iPhoneやPCで録音した声、または手元の音声・動画ファイルを
 - [ ] 「変換する」を押すと変換中、完了、エラー状態が表示される
 - [ ] 変換後音声をaudio controlsで再生できる
 - [ ] `haunted-<preset>-<timestamp>.wav` 形式でWAV保存できる
-- [ ] 外部API通信が発生しない
+- [ ] 音声ファイルや録音データが外部へ送信されない
 - [ ] コンソールに致命的なJavaScriptエラーが出ない
