@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080509">
+  <title>怖い声変換ツール</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080509;
+      --panel: #151016;
+      --panel-2: #201820;
+      --text: #f4edf0;
+      --muted: #b8a9ae;
+      --line: #3b2931;
+      --blood: #d51f3c;
+      --blood-2: #8d1227;
+      --ember: #ffb23f;
+      --violet: #8e67ff;
+      --cyan: #62d7cf;
+      --ok: #72e3a2;
+      --warn: #ffd36a;
+      --bad: #ff6b7d;
+      --shadow: 0 18px 40px rgba(0, 0, 0, .36);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 0%, rgba(213, 31, 60, .26), transparent 28rem),
+        radial-gradient(circle at 90% 16%, rgba(98, 215, 207, .10), transparent 24rem),
+        linear-gradient(180deg, #10070b 0%, #080509 54%, #050405 100%);
+      letter-spacing: 0;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(255, 255, 255, .025),
+          rgba(255, 255, 255, .025) 1px,
+          transparent 1px,
+          transparent 5px
+        );
+      mix-blend-mode: screen;
+      opacity: .24;
+    }
+
+    .app {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    }
+
+    header {
+      padding: 10px 0 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 12vw, 4.5rem);
+      line-height: .95;
+      font-weight: 900;
+      text-wrap: balance;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 48rem;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(32, 24, 32, .95), rgba(15, 10, 15, .95));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px 0;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .tag {
+      min-width: max-content;
+      color: #18070b;
+      background: var(--ember);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .75rem;
+      font-weight: 800;
+    }
+
+    .panel-body {
+      padding: 14px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button,
+    .file-button {
+      min-height: 52px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      background: #2a2029;
+      font: inherit;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform .14s ease, border-color .14s ease, background .14s ease, opacity .14s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active,
+    .file-button:active {
+      transform: translateY(1px) scale(.99);
+    }
+
+    button:focus-visible,
+    .file-button:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 3px solid rgba(255, 178, 63, .42);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .48;
+    }
+
+    .primary {
+      background: linear-gradient(180deg, var(--blood), var(--blood-2));
+      border-color: rgba(255, 255, 255, .1);
+    }
+
+    .secondary {
+      border-color: #56414c;
+      background: #231a22;
+    }
+
+    .danger {
+      background: #3b111b;
+      border-color: #7f2033;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, .23);
+      color: var(--muted);
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--muted);
+      box-shadow: 0 0 18px currentColor;
+    }
+
+    .status.recording .dot,
+    .status.busy .dot {
+      background: var(--blood);
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    .status.ok .dot {
+      background: var(--ok);
+    }
+
+    .status.error .dot {
+      background: var(--bad);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: .45; transform: scale(.9); }
+      50% { opacity: 1; transform: scale(1.24); }
+    }
+
+    .meter-wrap {
+      height: 18px;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #0a080a;
+      overflow: hidden;
+    }
+
+    .meter {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--ember), var(--blood));
+      transition: width .08s linear;
+    }
+
+    .drop-zone {
+      display: block;
+      margin-top: 10px;
+      border: 1px dashed #654a57;
+      border-radius: 8px;
+      padding: 16px;
+      background: rgba(0, 0, 0, .18);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .drop-zone.drag {
+      border-color: var(--ember);
+      background: rgba(255, 178, 63, .08);
+      color: var(--text);
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    audio {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .preset {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 11px;
+      align-items: start;
+      min-height: 70px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #161016;
+      text-align: left;
+    }
+
+    .preset[aria-pressed="true"] {
+      border-color: rgba(213, 31, 60, .9);
+      background: linear-gradient(180deg, rgba(91, 19, 33, .88), rgba(32, 12, 20, .96));
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .08);
+      font-weight: 900;
+      color: var(--ember);
+    }
+
+    .preset strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+
+    .preset span {
+      display: block;
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .slider-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 800;
+    }
+
+    #fearValue {
+      color: var(--ember);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blood);
+    }
+
+    .fineprint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.55;
+    }
+
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .download {
+      display: none;
+      min-height: 52px;
+      align-content: center;
+      border: 1px solid rgba(114, 227, 162, .55);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #06130c;
+      background: var(--ok);
+      text-align: center;
+      text-decoration: none;
+      font-weight: 900;
+    }
+
+    .download.ready {
+      display: grid;
+    }
+
+    footer {
+      padding: 18px 2px 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.6;
+    }
+
+    @media (min-width: 760px) {
+      .app {
+        padding-inline: 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+
+      .panel.result-panel {
+        grid-column: 1 / -1;
+      }
+
+      .presets {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .result-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>怖い声変換ツール</h1>
+      <p class="lead">録音した声や手元の音声を、鬼・お化け・悪魔・呪いのラジオ風のホラー演出エフェクトに変換します。音声は端末内だけで処理され、サーバーへ送信されません。</p>
+    </header>
+
+    <section class="grid" aria-label="怖い声変換">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>録音 / 読み込み</h2>
+          <span class="tag">最大60秒</span>
+        </div>
+        <div class="panel-body">
+          <div class="controls">
+            <button class="primary" id="recordButton" type="button">録音開始</button>
+            <button class="danger" id="stopButton" type="button" disabled>停止</button>
+            <label class="file-button secondary wide" for="fileInput">音声・動画ファイルを選択</label>
+            <input class="file-input" id="fileInput" type="file" accept="audio/*,video/*">
+          </div>
+
+          <div class="status" id="inputStatus" role="status" aria-live="polite">
+            <span class="dot" aria-hidden="true"></span>
+            <span>録音するか、音声ファイルを読み込んでください。</span>
+          </div>
+
+          <div class="meter-wrap" aria-label="音量メーター">
+            <div class="meter" id="meter"></div>
+          </div>
+
+          <div class="drop-zone" id="dropZone">PCではここに audio / video ファイルをドロップできます。</div>
+          <audio id="sourceAudio" controls hidden></audio>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>プリセット / 怖さ</h2>
+        </div>
+        <div class="panel-body">
+          <div class="presets" id="presetButtons" role="group" aria-label="怖い声プリセット">
+            <button class="preset" type="button" data-preset="oni" aria-pressed="true">
+              <span class="mark">鬼</span>
+              <span><strong>鬼</strong><span>低音、歪み、近くで迫る圧迫感。</span></span>
+            </button>
+            <button class="preset" type="button" data-preset="ghost" aria-pressed="false">
+              <span class="mark">霧</span>
+              <span><strong>お化け</strong><span>残響、揺れ、遠くから聞こえる声。</span></span>
+            </button>
+            <button class="preset" type="button" data-preset="demon" aria-pressed="false">
+              <span class="mark">魔</span>
+              <span><strong>悪魔</strong><span>複数の低音レイヤーと強い歪み。</span></span>
+            </button>
+            <button class="preset" type="button" data-preset="radio" aria-pressed="false">
+              <span class="mark">波</span>
+              <span><strong>呪いのラジオ</strong><span>電話・無線風の帯域制限とノイズ。</span></span>
+            </button>
+          </div>
+
+          <div class="slider-row">
+            <label class="slider-label" for="fearSlider">
+              <span>怖さ</span>
+              <span id="fearValue">70%</span>
+            </label>
+            <input id="fearSlider" type="range" min="0" max="100" value="70">
+          </div>
+
+          <p class="fineprint">低音化、歪み、残響、ディレイ、レイヤー音量が怖さに合わせて変化します。</p>
+        </div>
+      </article>
+
+      <article class="panel result-panel">
+        <div class="panel-header">
+          <h2>変換 / 保存</h2>
+        </div>
+        <div class="panel-body">
+          <div class="result-actions">
+            <button class="primary" id="convertButton" type="button" disabled>変換する</button>
+            <a class="download" id="downloadLink" href="#" download>WAVを保存</a>
+          </div>
+
+          <div class="status" id="processStatus" role="status" aria-live="polite">
+            <span class="dot" aria-hidden="true"></span>
+            <span>元音声の準備ができると変換できます。</span>
+          </div>
+
+          <audio id="resultAudio" controls hidden></audio>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      <p>このツールはホラー演出用の音声エフェクトです。特定個人の声真似、なりすまし、AIボイスクローン機能はありません。</p>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const MAX_SECONDS = 60;
+      const MIME_TYPES = [
+        "audio/mp4",
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus"
+      ];
+
+      const state = {
+        stream: null,
+        recorder: null,
+        chunks: [],
+        recordAudioContext: null,
+        meterAnalyser: null,
+        meterAnimation: null,
+        sourceBuffer: null,
+        sourceObjectUrl: null,
+        resultObjectUrl: null,
+        selectedPreset: "oni",
+        isRendering: false
+      };
+
+      const els = {
+        recordButton: document.getElementById("recordButton"),
+        stopButton: document.getElementById("stopButton"),
+        fileInput: document.getElementById("fileInput"),
+        dropZone: document.getElementById("dropZone"),
+        sourceAudio: document.getElementById("sourceAudio"),
+        resultAudio: document.getElementById("resultAudio"),
+        inputStatus: document.getElementById("inputStatus"),
+        processStatus: document.getElementById("processStatus"),
+        meter: document.getElementById("meter"),
+        presetButtons: document.getElementById("presetButtons"),
+        fearSlider: document.getElementById("fearSlider"),
+        fearValue: document.getElementById("fearValue"),
+        convertButton: document.getElementById("convertButton"),
+        downloadLink: document.getElementById("downloadLink")
+      };
+
+      function setStatus(el, text, mode = "") {
+        el.className = `status ${mode}`.trim();
+        el.querySelector("span:last-child").textContent = text;
+      }
+
+      function setInputStatus(text, mode = "") {
+        setStatus(els.inputStatus, text, mode);
+      }
+
+      function setProcessStatus(text, mode = "") {
+        setStatus(els.processStatus, text, mode);
+      }
+
+      function getSupportedMimeType() {
+        if (!window.MediaRecorder) return "";
+        return MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type)) || "";
+      }
+
+      function revokeUrl(key) {
+        if (state[key]) {
+          URL.revokeObjectURL(state[key]);
+          state[key] = null;
+        }
+      }
+
+      function resetResult() {
+        revokeUrl("resultObjectUrl");
+        els.resultAudio.hidden = true;
+        els.resultAudio.removeAttribute("src");
+        els.downloadLink.classList.remove("ready");
+        els.downloadLink.removeAttribute("href");
+        els.downloadLink.removeAttribute("download");
+      }
+
+      function updateConvertAvailability() {
+        els.convertButton.disabled = !state.sourceBuffer || state.isRendering;
+      }
+
+      function stopMeter() {
+        if (state.meterAnimation) {
+          cancelAnimationFrame(state.meterAnimation);
+          state.meterAnimation = null;
+        }
+        els.meter.style.width = "0%";
+      }
+
+      function startMeter(stream) {
+        stopMeter();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        state.recordAudioContext = new AudioContextClass();
+        const source = state.recordAudioContext.createMediaStreamSource(stream);
+        const analyser = state.recordAudioContext.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        state.meterAnalyser = analyser;
+
+        const data = new Uint8Array(analyser.fftSize);
+        const tick = () => {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 1) {
+            const normalized = (data[i] - 128) / 128;
+            sum += normalized * normalized;
+          }
+          const rms = Math.sqrt(sum / data.length);
+          const level = Math.min(100, Math.round(rms * 260));
+          els.meter.style.width = `${level}%`;
+          state.meterAnimation = requestAnimationFrame(tick);
+        };
+        tick();
+      }
+
+      async function closeRecordAudioContext() {
+        stopMeter();
+        if (state.recordAudioContext && state.recordAudioContext.state !== "closed") {
+          try {
+            await state.recordAudioContext.close();
+          } catch (_) {
+            // iOSでは録音停止直後にcloseできないことがあるため握りつぶす。
+          }
+        }
+        state.recordAudioContext = null;
+        state.meterAnalyser = null;
+      }
+
+      function stopStream() {
+        if (state.stream) {
+          state.stream.getTracks().forEach(track => track.stop());
+          state.stream = null;
+        }
+      }
+
+      async function decodeBlob(blob) {
+        const arrayBuffer = await blob.arrayBuffer();
+        return decodeArrayBuffer(arrayBuffer);
+      }
+
+      async function decodeArrayBuffer(arrayBuffer) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          throw new Error("このブラウザはWeb Audio APIに対応していません。");
+        }
+        const context = new AudioContextClass();
+        try {
+          const copy = arrayBuffer.slice(0);
+          return await context.decodeAudioData(copy);
+        } finally {
+          if (context.state !== "closed") {
+            await context.close();
+          }
+        }
+      }
+
+      function trimBuffer(buffer, maxSeconds = MAX_SECONDS) {
+        const duration = Math.min(buffer.duration, maxSeconds);
+        const frameCount = Math.floor(duration * buffer.sampleRate);
+        if (frameCount >= buffer.length) return buffer;
+
+        const trimmed = new AudioBuffer({
+          length: frameCount,
+          numberOfChannels: buffer.numberOfChannels,
+          sampleRate: buffer.sampleRate
+        });
+
+        for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+          trimmed.copyToChannel(buffer.getChannelData(channel).slice(0, frameCount), channel);
+        }
+        return trimmed;
+      }
+
+      function setSourceFromBlob(blob, buffer, label) {
+        revokeUrl("sourceObjectUrl");
+        resetResult();
+        state.sourceBuffer = trimBuffer(buffer);
+        state.sourceObjectUrl = URL.createObjectURL(blob);
+        els.sourceAudio.src = state.sourceObjectUrl;
+        els.sourceAudio.hidden = false;
+
+        const clipped = buffer.duration > MAX_SECONDS ? ` 先頭${MAX_SECONDS}秒を処理します。` : "";
+        setInputStatus(`${label}を読み込みました。長さ ${formatDuration(state.sourceBuffer.duration)}。${clipped}`, "ok");
+        setProcessStatus("プリセットと怖さを選んで変換できます。", "ok");
+        updateConvertAvailability();
+      }
+
+      function formatDuration(seconds) {
+        const min = Math.floor(seconds / 60);
+        const sec = Math.round(seconds % 60).toString().padStart(2, "0");
+        return `${min}:${sec}`;
+      }
+
+      async function handleFile(file) {
+        if (!file) return;
+        if (!file.type.startsWith("audio/") && !file.type.startsWith("video/")) {
+          setInputStatus("audioまたはvideoファイルを選んでください。", "error");
+          return;
+        }
+
+        try {
+          setInputStatus("ファイルを読み込んでいます...", "busy");
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = await decodeArrayBuffer(arrayBuffer);
+          setSourceFromBlob(file, buffer, file.name || "ファイル");
+        } catch (error) {
+          setInputStatus(`読み込みに失敗しました。ブラウザで再生できる音声形式を試してください。${messageOf(error)}`, "error");
+        }
+      }
+
+      async function startRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setInputStatus("このブラウザではマイク録音に対応していません。HTTPSのSafari/Chromeで開いてください。", "error");
+          return;
+        }
+        if (!window.MediaRecorder) {
+          setInputStatus("このブラウザではMediaRecorderに対応していません。iOSを更新するか、音声ファイル読み込みを使ってください。", "error");
+          return;
+        }
+
+        const mimeType = getSupportedMimeType();
+        if (!mimeType) {
+          setInputStatus("録音形式に対応していません。audio/mp4などを扱えるブラウザで開いてください。", "error");
+          return;
+        }
+
+        try {
+          resetResult();
+          state.chunks = [];
+          state.stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            }
+          });
+          startMeter(state.stream);
+
+          state.recorder = new MediaRecorder(state.stream, { mimeType });
+          state.recorder.ondataavailable = event => {
+            if (event.data && event.data.size > 0) {
+              state.chunks.push(event.data);
+            }
+          };
+          state.recorder.onerror = () => {
+            setInputStatus("録音中にエラーが発生しました。マイク許可とブラウザ設定を確認してください。", "error");
+          };
+          state.recorder.onstop = finishRecording;
+          state.recorder.start();
+
+          els.recordButton.disabled = true;
+          els.stopButton.disabled = false;
+          updateConvertAvailability();
+          setInputStatus("録音中です。話し終えたら停止してください。", "recording");
+        } catch (error) {
+          stopStream();
+          await closeRecordAudioContext();
+          els.recordButton.disabled = false;
+          els.stopButton.disabled = true;
+          setInputStatus(`マイクを開始できません。HTTPSで開き、マイク許可を確認してください。${messageOf(error)}`, "error");
+        }
+      }
+
+      async function finishRecording() {
+        const mimeType = state.recorder && state.recorder.mimeType ? state.recorder.mimeType : getSupportedMimeType();
+        stopStream();
+        await closeRecordAudioContext();
+        els.recordButton.disabled = false;
+        els.stopButton.disabled = true;
+
+        try {
+          if (!state.chunks.length) {
+            throw new Error("録音データが空です。");
+          }
+          setInputStatus("録音を音声として準備しています...", "busy");
+          const blob = new Blob(state.chunks, { type: mimeType || "audio/mp4" });
+          const buffer = await decodeBlob(blob);
+          setSourceFromBlob(blob, buffer, "録音音声");
+        } catch (error) {
+          setInputStatus(`録音データを読み込めませんでした。短く録り直してください。${messageOf(error)}`, "error");
+        } finally {
+          state.recorder = null;
+          state.chunks = [];
+        }
+      }
+
+      function stopRecording() {
+        if (state.recorder && state.recorder.state !== "inactive") {
+          state.recorder.stop();
+          setInputStatus("録音を停止しています...", "busy");
+        }
+      }
+
+      function createDistortionCurve(amount) {
+        const samples = 44100;
+        const curve = new Float32Array(samples);
+        const k = Math.max(0, amount);
+        for (let i = 0; i < samples; i += 1) {
+          const x = (i * 2) / samples - 1;
+          curve[i] = ((3 + k) * x * 20 * Math.PI / 180) / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+      }
+
+      function createImpulse(context, seconds, decay, reverse = false) {
+        const length = Math.max(1, Math.floor(context.sampleRate * seconds));
+        const impulse = context.createBuffer(2, length, context.sampleRate);
+        for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+          const data = impulse.getChannelData(channel);
+          for (let i = 0; i < length; i += 1) {
+            const n = reverse ? length - i : i;
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay);
+          }
+        }
+        return impulse;
+      }
+
+      function createNoiseBuffer(context, duration, level = 1) {
+        const length = Math.floor(context.sampleRate * duration);
+        const buffer = context.createBuffer(1, length, context.sampleRate);
+        const data = buffer.getChannelData(0);
+        let last = 0;
+        for (let i = 0; i < length; i += 1) {
+          last = (last * .72) + ((Math.random() * 2 - 1) * .28);
+          data[i] = last * level;
+        }
+        return buffer;
+      }
+
+      function addDelay(context, input, output, options) {
+        const delay = context.createDelay(2);
+        const feedback = context.createGain();
+        const wet = context.createGain();
+
+        delay.delayTime.value = options.time;
+        feedback.gain.value = options.feedback;
+        wet.gain.value = options.wet;
+
+        input.connect(delay);
+        delay.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(wet);
+        wet.connect(output);
+      }
+
+      function addReverb(context, input, output, options) {
+        const convolver = context.createConvolver();
+        const wet = context.createGain();
+        convolver.buffer = createImpulse(context, options.seconds, options.decay, options.reverse);
+        wet.gain.value = options.wet;
+        input.connect(convolver);
+        convolver.connect(wet);
+        wet.connect(output);
+      }
+
+      function addTremolo(context, input, output, depth, frequency) {
+        const tremoloGain = context.createGain();
+        const osc = context.createOscillator();
+        const lfoGain = context.createGain();
+
+        tremoloGain.gain.value = 1 - depth / 2;
+        osc.frequency.value = frequency;
+        lfoGain.gain.value = depth / 2;
+
+        osc.connect(lfoGain);
+        lfoGain.connect(tremoloGain.gain);
+        input.connect(tremoloGain);
+        tremoloGain.connect(output);
+        osc.start(0);
+      }
+
+      function connectLayer(context, buffer, destination, layer) {
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+        source.buffer = buffer;
+        source.playbackRate.value = layer.rate || 1;
+        gain.gain.value = layer.gain;
+        source.connect(gain);
+        gain.connect(destination);
+        source.start(layer.start || 0);
+        return source;
+      }
+
+      function buildChain(context, buffer, preset, fear) {
+        const intensity = fear / 100;
+        const master = context.createGain();
+        master.gain.value = .82;
+        master.connect(context.destination);
+
+        const mix = context.createGain();
+        mix.gain.value = 1;
+
+        const shaper = context.createWaveShaper();
+        const lowpass = context.createBiquadFilter();
+        const highpass = context.createBiquadFilter();
+        const compressor = context.createDynamicsCompressor();
+        const post = context.createGain();
+
+        compressor.threshold.value = -26;
+        compressor.knee.value = 18;
+        compressor.ratio.value = 8 + intensity * 8;
+        compressor.attack.value = .004;
+        compressor.release.value = .18;
+
+        post.gain.value = .78;
+
+        if (preset === "oni") {
+          connectLayer(context, buffer, mix, { rate: .72 - intensity * .08, gain: .9 });
+          connectLayer(context, buffer, mix, { rate: .58, gain: .16 + intensity * .24, start: .012 });
+          shaper.curve = createDistortionCurve(110 + intensity * 520);
+          shaper.oversample = "4x";
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 1300 - intensity * 420;
+          highpass.type = "highpass";
+          highpass.frequency.value = 45;
+          mix.connect(shaper);
+          shaper.connect(lowpass);
+          lowpass.connect(highpass);
+          highpass.connect(compressor);
+          compressor.connect(post);
+          post.connect(master);
+          addDelay(context, post, master, { time: .075, feedback: .08 + intensity * .12, wet: .06 + intensity * .08 });
+        }
+
+        if (preset === "ghost") {
+          connectLayer(context, buffer, mix, { rate: .9 - intensity * .08, gain: .66 });
+          connectLayer(context, buffer, mix, { rate: .98, gain: .2 + intensity * .12, start: .035 });
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 2400 - intensity * 700;
+          highpass.type = "highpass";
+          highpass.frequency.value = 120 + intensity * 140;
+          mix.connect(lowpass);
+          lowpass.connect(highpass);
+          addTremolo(context, highpass, post, .18 + intensity * .42, 3.4 + intensity * 2.2);
+          post.gain.value = .58;
+          post.connect(master);
+          addDelay(context, post, master, { time: .26 + intensity * .11, feedback: .22 + intensity * .24, wet: .18 + intensity * .26 });
+          addReverb(context, post, master, { seconds: 1.4 + intensity * 2.4, decay: 2.8, reverse: true, wet: .2 + intensity * .34 });
+        }
+
+        if (preset === "demon") {
+          connectLayer(context, buffer, mix, { rate: .64 - intensity * .09, gain: .72 });
+          connectLayer(context, buffer, mix, { rate: .48 - intensity * .04, gain: .26 + intensity * .34, start: .018 });
+          connectLayer(context, buffer, mix, { rate: .82, gain: .18 + intensity * .2, start: .032 });
+          shaper.curve = createDistortionCurve(260 + intensity * 960);
+          shaper.oversample = "4x";
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 1600 - intensity * 520;
+          highpass.type = "highpass";
+          highpass.frequency.value = 38;
+          mix.connect(shaper);
+          shaper.connect(lowpass);
+          lowpass.connect(highpass);
+          highpass.connect(compressor);
+          compressor.connect(post);
+          post.gain.value = .72;
+          post.connect(master);
+          addDelay(context, post, master, { time: .11, feedback: .16 + intensity * .24, wet: .1 + intensity * .16 });
+          addReverb(context, post, master, { seconds: .9 + intensity * 1.2, decay: 2.1, reverse: false, wet: .08 + intensity * .16 });
+        }
+
+        if (preset === "radio") {
+          connectLayer(context, buffer, mix, { rate: .94 - intensity * .04, gain: .78 });
+          shaper.curve = createDistortionCurve(45 + intensity * 360);
+          shaper.oversample = "2x";
+          highpass.type = "highpass";
+          highpass.frequency.value = 420 + intensity * 260;
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 2300 - intensity * 650;
+          mix.connect(highpass);
+          highpass.connect(lowpass);
+          lowpass.connect(shaper);
+          shaper.connect(post);
+          post.gain.value = .62;
+          post.connect(master);
+          addDelay(context, post, master, { time: .045, feedback: .08 + intensity * .14, wet: .08 + intensity * .12 });
+
+          const noise = context.createBufferSource();
+          const noiseFilter = context.createBiquadFilter();
+          const noiseGain = context.createGain();
+          noise.buffer = createNoiseBuffer(context, context.length / context.sampleRate, .8);
+          noiseFilter.type = "bandpass";
+          noiseFilter.frequency.value = 1600;
+          noiseFilter.Q.value = .65;
+          noiseGain.gain.value = .018 + intensity * .065;
+          noise.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(master);
+          noise.start(0);
+        }
+      }
+
+      function getPresetMinPlaybackRate(preset, fear) {
+        const intensity = fear / 100;
+        if (preset === "oni") return Math.min(.72 - intensity * .08, .58);
+        if (preset === "ghost") return .9 - intensity * .08;
+        if (preset === "demon") return Math.min(.64 - intensity * .09, .48 - intensity * .04);
+        if (preset === "radio") return .94 - intensity * .04;
+        return 1;
+      }
+
+      async function renderEffect() {
+        if (!state.sourceBuffer || state.isRendering) return;
+
+        state.isRendering = true;
+        updateConvertAvailability();
+        resetResult();
+        setProcessStatus("変換中です。端末内で音声をレンダリングしています...", "busy");
+
+        try {
+          const source = state.sourceBuffer;
+          const preset = state.selectedPreset;
+          const fear = Number(els.fearSlider.value);
+          const extraSeconds = preset === "ghost" ? 4 : 2;
+          const minRate = Math.max(.4, getPresetMinPlaybackRate(preset, fear));
+          const sampleRate = Math.min(48000, source.sampleRate || 44100);
+          const duration = (Math.min(source.duration, MAX_SECONDS) / minRate) + extraSeconds;
+          const length = Math.ceil(duration * sampleRate);
+          const channels = Math.min(2, source.numberOfChannels || 1);
+          const context = new OfflineAudioContext(channels, length, sampleRate);
+
+          buildChain(context, source, preset, fear);
+          const rendered = await context.startRendering();
+          const wavBlob = audioBufferToWavBlob(rendered);
+          const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
+          const filename = `haunted-${preset}-${timestamp}.wav`;
+
+          state.resultObjectUrl = URL.createObjectURL(wavBlob);
+          els.resultAudio.src = state.resultObjectUrl;
+          els.resultAudio.hidden = false;
+          els.downloadLink.href = state.resultObjectUrl;
+          els.downloadLink.download = filename;
+          els.downloadLink.classList.add("ready");
+          setProcessStatus(`変換が完了しました。${filename} として保存できます。`, "ok");
+        } catch (error) {
+          setProcessStatus(`変換に失敗しました。短い音声で試すか、別の形式を読み込んでください。${messageOf(error)}`, "error");
+        } finally {
+          state.isRendering = false;
+          updateConvertAvailability();
+        }
+      }
+
+      function audioBufferToWavBlob(buffer) {
+        const numberOfChannels = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const bytesPerSample = 2;
+        const blockAlign = numberOfChannels * bytesPerSample;
+        const dataLength = buffer.length * blockAlign;
+        const arrayBuffer = new ArrayBuffer(44 + dataLength);
+        const view = new DataView(arrayBuffer);
+        let offset = 0;
+
+        writeString(view, offset, "RIFF"); offset += 4;
+        view.setUint32(offset, 36 + dataLength, true); offset += 4;
+        writeString(view, offset, "WAVE"); offset += 4;
+        writeString(view, offset, "fmt "); offset += 4;
+        view.setUint32(offset, 16, true); offset += 4;
+        view.setUint16(offset, 1, true); offset += 2;
+        view.setUint16(offset, numberOfChannels, true); offset += 2;
+        view.setUint32(offset, sampleRate, true); offset += 4;
+        view.setUint32(offset, sampleRate * blockAlign, true); offset += 4;
+        view.setUint16(offset, blockAlign, true); offset += 2;
+        view.setUint16(offset, bytesPerSample * 8, true); offset += 2;
+        writeString(view, offset, "data"); offset += 4;
+        view.setUint32(offset, dataLength, true); offset += 4;
+
+        const channels = [];
+        for (let channel = 0; channel < numberOfChannels; channel += 1) {
+          channels.push(buffer.getChannelData(channel));
+        }
+
+        for (let i = 0; i < buffer.length; i += 1) {
+          for (let channel = 0; channel < numberOfChannels; channel += 1) {
+            const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+            offset += 2;
+          }
+        }
+
+        return new Blob([arrayBuffer], { type: "audio/wav" });
+      }
+
+      function writeString(view, offset, text) {
+        for (let i = 0; i < text.length; i += 1) {
+          view.setUint8(offset + i, text.charCodeAt(i));
+        }
+      }
+
+      function messageOf(error) {
+        if (!error || !error.message) return "";
+        return `（${error.message}）`;
+      }
+
+      els.recordButton.addEventListener("click", startRecording);
+      els.stopButton.addEventListener("click", stopRecording);
+      els.fileInput.addEventListener("change", event => handleFile(event.target.files[0]));
+      els.convertButton.addEventListener("click", renderEffect);
+
+      els.fearSlider.addEventListener("input", () => {
+        els.fearValue.textContent = `${els.fearSlider.value}%`;
+      });
+
+      els.presetButtons.addEventListener("click", event => {
+        const button = event.target.closest(".preset");
+        if (!button) return;
+        state.selectedPreset = button.dataset.preset;
+        document.querySelectorAll(".preset").forEach(item => {
+          item.setAttribute("aria-pressed", String(item === button));
+        });
+        if (state.sourceBuffer) {
+          setProcessStatus("設定を変えました。もう一度変換できます。", "ok");
+        }
+      });
+
+      ["dragenter", "dragover"].forEach(type => {
+        els.dropZone.addEventListener(type, event => {
+          event.preventDefault();
+          els.dropZone.classList.add("drag");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(type => {
+        els.dropZone.addEventListener(type, event => {
+          event.preventDefault();
+          els.dropZone.classList.remove("drag");
+        });
+      });
+
+      els.dropZone.addEventListener("drop", event => {
+        const file = event.dataTransfer && event.dataTransfer.files[0];
+        handleFile(file);
+      });
+
+      window.addEventListener("pagehide", () => {
+        stopStream();
+        stopMeter();
+        revokeUrl("sourceObjectUrl");
+        revokeUrl("resultObjectUrl");
+      });
+    })();
+  </script>
+</body>
+</html>
