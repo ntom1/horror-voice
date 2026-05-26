@@ -4,11 +4,13 @@
 ## 上位ルール参照
 
 このrepoでは、まず上位の共通ルールを必ず適用する。
+共通ルールは長く複製せず、作業内容に応じて必要な詳細だけ参照すること。
 
 - Codex向け共通ルール: `/Users/jarvis/AGENTS.md`
 - Claude Code向け共通ルール: `/Users/jarvis/CLAUDE.md`
 - Development配下共通ルール: `/Users/jarvis/Development/AGENTS.md`
 - Skill原本管理: `/Users/jarvis/agent-skills/`
+- 詳細ルール索引: `/Users/jarvis/Development/agent-rules/AGENTS.md`
 
 共通ルールとこのrepo固有ルールが矛盾する場合は、より上位の共通ルールを優先すること。
 このファイルには、共通ルールを複製せず、このrepo固有の差分だけを書くこと。
