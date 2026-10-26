@@ -27,3 +27,6 @@ Markdownは、ユーザーから明示的な指定がない限り日本語で作
 - 検証コマンド: JavaScript構文確認は `sed -n '/^  <script>$/,/^  <\\/script>$/p' index.html | sed '1d;$d' | node --check -`、空白差分確認は `git diff --check` を使う。UI/音声変換はブラウザで音声ファイルを読み込み、各プリセットの変換とWAV保存リンク生成を確認する。
 - 触ってはいけないファイル/ディレクトリ: 生成されたWAV、録音音声、検証用音声ファイル、ブラウザキャッシュ、`node_modules/` などの一時・生成物はrepoへ追加しない。
 - GitHubへpushする前の確認事項: READMEの依存関係・プライバシー・動作確認チェックリストが実装と一致していること、Tone.js CDNが使える場合と読み込めない場合のフォールバックを確認すること、公開repoに音声データや秘密情報が含まれていないことを確認すること。
+
+## Documentation vs. existing code
+When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code. Exception: instructions about secrets, credentials, security, and explicitly prohibited actions always take precedence over existing code.
